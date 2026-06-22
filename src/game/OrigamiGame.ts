@@ -30,6 +30,9 @@ export class OrigamiGame {
   private resetBtn: HTMLButtonElement | null = null;
   private hintBtn: HTMLButtonElement | null = null;
   private nextBtn: HTMLButtonElement | null = null;
+  private zoomInBtn: HTMLButtonElement | null = null;
+  private zoomOutBtn: HTMLButtonElement | null = null;
+  private resetViewBtn: HTMLButtonElement | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -77,6 +80,12 @@ export class OrigamiGame {
               <h2 id="question-name">题目名称</h2>
               <p id="question-desc">题目描述</p>
             </div>
+            <div class="viewer-toolbar">
+              <button class="btn btn-viewer" id="zoom-out-btn" title="缩小">🔍-</button>
+              <button class="btn btn-viewer" id="reset-view-btn" title="恢复居中">⌂</button>
+              <button class="btn btn-viewer" id="zoom-in-btn" title="放大">🔍+</button>
+              <span class="viewer-hint">滚轮缩放 · 拖拽平移</span>
+            </div>
             <div class="svg-container" id="svg-container"></div>
             <div class="action-buttons">
               <button class="btn btn-secondary" id="reset-btn">🔄 重置</button>
@@ -105,11 +114,17 @@ export class OrigamiGame {
     this.resetBtn = this.container.querySelector('#reset-btn');
     this.hintBtn = this.container.querySelector('#hint-btn');
     this.nextBtn = this.container.querySelector('#next-btn');
+    this.zoomInBtn = this.container.querySelector('#zoom-in-btn');
+    this.zoomOutBtn = this.container.querySelector('#zoom-out-btn');
+    this.resetViewBtn = this.container.querySelector('#reset-view-btn');
 
     this.submitBtn?.addEventListener('click', () => this.checkAnswer());
     this.resetBtn?.addEventListener('click', () => this.resetFolds());
     this.hintBtn?.addEventListener('click', () => this.showHint());
     this.nextBtn?.addEventListener('click', () => this.nextQuestion());
+    this.zoomInBtn?.addEventListener('click', () => this.origamiSVG?.zoomIn());
+    this.zoomOutBtn?.addEventListener('click', () => this.origamiSVG?.zoomOut());
+    this.resetViewBtn?.addEventListener('click', () => this.origamiSVG?.resetView());
   }
 
   private startGame(): void {

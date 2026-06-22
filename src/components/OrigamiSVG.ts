@@ -11,8 +11,20 @@ export class OrigamiSVG {
   private foldLines: FoldLine[];
   private onFold: (lineId: string) => void;
   private onUnfold: (lineId: string) => void;
+  private transformGroup: SVGGElement;
   private paperGroup: SVGGElement;
   private foldStates: Map<string, boolean> = new Map();
+
+  private scale: number = 1;
+  private translateX: number = 0;
+  private translateY: number = 0;
+  private minScale: number = 0.5;
+  private maxScale: number = 4;
+  private isDragging: boolean = false;
+  private dragStartX: number = 0;
+  private dragStartY: number = 0;
+  private dragStartTranslateX: number = 0;
+  private dragStartTranslateY: number = 0;
 
   constructor(
     container: HTMLElement,
@@ -29,12 +41,120 @@ export class OrigamiSVG {
     this.svg.setAttribute('viewBox', `0 0 ${this.paperSize} ${this.paperSize + 50}`);
     this.svg.setAttribute('class', 'origami-svg');
 
+    this.transformGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    this.transformGroup.setAttribute('class', 'transform-group');
+    this.svg.appendChild(this.transformGroup);
+
     this.paperGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     this.paperGroup.setAttribute('class', 'paper-group');
-    this.svg.appendChild(this.paperGroup);
+    this.transformGroup.appendChild(this.paperGroup);
 
     this.render();
+    this.bindEvents();
     container.appendChild(this.svg);
+  }
+
+  private bindEvents(): void {
+    this.svg.addEventListener('wheel', (e) => this.handleWheel(e), { passive: false });
+    this.svg.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+    this.svg.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+    this.svg.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+    this.svg.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
+  }
+
+  private handleWheel(e: WheelEvent): void {
+    e.preventDefault();
+
+    const rect = this.svg.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const svgPoint = this.clientToSVG(mouseX, mouseY);
+
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(this.minScale, Math.min(this.maxScale, this.scale * delta));
+
+    const scaleFactor = newScale / this.scale;
+
+    this.translateX = svgPoint.x - (svgPoint.x - this.translateX) * scaleFactor;
+    this.translateY = svgPoint.y - (svgPoint.y - this.translateY) * scaleFactor;
+    this.scale = newScale;
+
+    this.updateTransform();
+  }
+
+  private handleMouseDown(e: MouseEvent): void {
+    if (e.button !== 0) return;
+
+    const target = e.target as Element;
+    if (target.classList.contains('fold-line-hit')) return;
+
+    this.isDragging = true;
+    this.dragStartX = e.clientX;
+    this.dragStartY = e.clientY;
+    this.dragStartTranslateX = this.translateX;
+    this.dragStartTranslateY = this.translateY;
+    this.svg.style.cursor = 'grabbing';
+  }
+
+  private handleMouseMove(e: MouseEvent): void {
+    if (!this.isDragging) return;
+
+    const dx = e.clientX - this.dragStartX;
+    const dy = e.clientY - this.dragStartY;
+
+    const rect = this.svg.getBoundingClientRect();
+    const svgWidth = this.paperSize;
+    const svgHeight = this.paperSize + 50;
+    const scaleX = svgWidth / rect.width;
+    const scaleY = svgHeight / rect.height;
+
+    this.translateX = this.dragStartTranslateX + dx * scaleX;
+    this.translateY = this.dragStartTranslateY + dy * scaleY;
+
+    this.updateTransform();
+  }
+
+  private handleMouseUp(_e: MouseEvent): void {
+    this.isDragging = false;
+    this.svg.style.cursor = 'default';
+  }
+
+  private clientToSVG(clientX: number, clientY: number): { x: number; y: number } {
+    const pt = this.svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const svgP = pt.matrixTransform(this.svg.getScreenCTM()?.inverse());
+    return { x: svgP.x, y: svgP.y };
+  }
+
+  private updateTransform(): void {
+    this.transformGroup.setAttribute(
+      'transform',
+      `translate(${this.translateX} ${this.translateY}) scale(${this.scale})`
+    );
+    this.transformGroup.style.transformOrigin = '0 0';
+  }
+
+  zoomIn(): void {
+    this.scale = Math.min(this.maxScale, this.scale * 1.2);
+    this.updateTransform();
+  }
+
+  zoomOut(): void {
+    this.scale = Math.max(this.minScale, this.scale / 1.2);
+    this.updateTransform();
+  }
+
+  resetView(): void {
+    this.scale = 1;
+    this.translateX = 0;
+    this.translateY = 0;
+    this.updateTransform();
+  }
+
+  getScale(): number {
+    return this.scale;
   }
 
   private render(): void {
@@ -218,6 +338,7 @@ export class OrigamiSVG {
       paperRect.removeAttribute('transform');
       paperRect.removeAttribute('transform-origin');
     }
+    this.resetView();
   }
 
   destroy(): void {

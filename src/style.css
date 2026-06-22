@@ -110,6 +110,39 @@ body {
   line-height: 1.6;
 }
 
+.viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.btn-viewer {
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 36px;
+}
+
+.btn-viewer:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.viewer-hint {
+  font-size: 12px;
+  color: #999;
+  margin-left: auto;
+}
+
 .svg-container {
   display: flex;
   justify-content: center;
@@ -120,11 +153,18 @@ body {
   margin-bottom: 20px;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06);
   min-height: 300px;
+  overflow: hidden;
+  position: relative;
 }
 
 .origami-svg {
   max-width: 100%;
   height: auto;
+  user-select: none;
+}
+
+.transform-group {
+  transition: transform 0.05s ease-out;
 }
 
 .paper {
